@@ -110,7 +110,7 @@ This project is licensed under the [MIT License](LICENSE).
 
 ## 📬 Contact
 
-For inquiries or contributions, contact [your-email@example.com] or create an issue in the repository.
+For inquiries or contributions, contact [j.wang19@student.vu.nl] or create an issue in the repository.
 
 ---
 
