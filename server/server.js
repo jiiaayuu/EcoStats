@@ -1,8 +1,11 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const OpenAI = require('openai');
 
 dotenv.config();
+
+const OPENAI_API_KEY = "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";
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -10,21 +13,13 @@ const PORT = process.env.PORT || 5001;
 app.use(express.json());
 app.use(cors());
 
-// Initialize the Hugging Face summarization pipeline
-let summarizer;
-(async () => {
-  try {
-    // Dynamically import the @xenova/transformers library
-    const { pipeline } = await import('@xenova/transformers');
-    summarizer = await pipeline('summarization', 'Xenova/bart-large-cnn'); // Use a pre-trained model
-    console.log('Hugging Face summarization pipeline initialized.');
-  } catch (error) {
-    console.error('Failed to initialize Hugging Face pipeline:', error);
-  }
-})();
+// Initialize OpenAI API
+const openai = new OpenAI({
+  apiKey: OPENAI_API_KEY,
+});
 
-// Hugging Face summarization endpoint
-app.post('/api/huggingface/summarize', async (req, res) => {
+// OpenAI Summarization Route
+app.post('/summarize', async (req, res) => {
   const { data } = req.body;
 
   if (!data) {
@@ -32,17 +27,34 @@ app.post('/api/huggingface/summarize', async (req, res) => {
   }
 
   try {
-    // Generate summary using Hugging Face
-    const summary = await summarizer(data, {
-      max_length: 1300, // Adjust based on desired summary length
-      min_length: 30,
-      do_sample: false,
+    // Generate summary using OpenAI
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo', // Choose the model
+      messages: [
+        {
+          role: 'system',
+          content: `You are a helpful assistant that summarizes company sustainability data. 
+                    Always divide the summary into two sections: 
+                    1. Environmental Sustainability 
+                    2. Social Sustainability.`,
+        },
+        {
+          role: 'user',
+          content: `Summarize the following company sustainability data into two sections: 
+                    1. Environmental Sustainability 
+                    2. Social Sustainability. 
+                    Here is the data:\n\n${data}`,
+        },
+      ],
+      max_tokens: 500,
+      temperature: 0.7,
     });
 
-    // Return the generated summary
-    res.json({ summary: summary[0].summary_text });
+    const summary = response.choices?.[0]?.message?.content?.trim() || "Summary could not be generated.";
+    
+    res.json({ summary });
   } catch (error) {
-    console.error('Hugging Face Summarization Error:', error);
+    console.error('OpenAI Summarization Error:', error.response?.data || error.message);
     res.status(500).json({ error: 'Failed to generate summary' });
   }
 });

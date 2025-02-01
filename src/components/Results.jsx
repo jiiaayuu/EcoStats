@@ -8,7 +8,6 @@ const Results = ({ supabase }) => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Extract the search query from the URL
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('search') || '';
   console.log("Search Query:", searchQuery);
@@ -18,21 +17,17 @@ const Results = ({ supabase }) => {
       if (searchQuery) {
         setLoading(true);
         try {
-          // Fetch data from Supabase
           let query = supabase.from('sustainability_stats').select('*');
           const { data, error } = await query;
           if (error) throw error;
 
-          // Filter data based on search query
           const filteredData = data.filter((item) =>
             item.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             item.alternative_search_terms.toLowerCase().includes(searchQuery.toLowerCase())
           );
           setData(filteredData);
 
-          // Send data to Hugging Face for summarization
           if (filteredData.length > 0) {
-            // Format the data for summarization
             const dataToSummarize = `
               Company Name: ${filteredData[0].company_name}
               Industry: ${filteredData[0].industry}
@@ -41,11 +36,10 @@ const Results = ({ supabase }) => {
               Social Impact: ${filteredData[0].social_impact}
             `;
 
-            // Call the Hugging Face summarization endpoint
-            const response = await fetch('http://localhost:5001/api/huggingface/summarize', {
+            const response = await fetch('http://localhost:5001/summarize', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ data: dataToSummarize }), // Send formatted data
+              body: JSON.stringify({ data: dataToSummarize }),
             });
 
             const result = await response.json();
